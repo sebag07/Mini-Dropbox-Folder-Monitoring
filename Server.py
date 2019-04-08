@@ -1,3 +1,50 @@
+import socket               # Import socket module
+import os
+
+s = socket.socket()         # Create a socket object
+host = socket.gethostname() # Get local machine name
+port = 12345                 # Reserve a port for your service.
+s.bind((host, port))        # Bind to the port
+s.listen(5)                 # Now wait for client connection.
+client, address = s.accept()
+print("Got connection from" + str(address))
+path_to_copy = "/home/sebastian/Documents/Scoala/Pexip/ServerFolder/"
+
+while True:
+    message = client.recv(1024).decode()
+    if message == "added":
+        print("Receiving...")
+        name = client.recv(1024)
+        print(name.decode())
+        file_name = os.path.join(path_to_copy, name.decode())
+        print(file_name)
+        receivedSize = client.recv(1024)
+        print("Decoded Size = " + receivedSize.decode())
+        fileSize = int(receivedSize.decode())
+        print("fileSize = " + str(fileSize))
+        with open(file_name, 'wb') as f:
+            print("Receiving file...")
+            l = client.recv(1024)
+            totalReceived = len(l)
+            f.write(l)
+            while totalReceived < fileSize:
+                l = client.recv(1024)
+                totalReceived += len(l)
+                f.write(l)
+                print("{0:0.2f}".format((totalReceived/float(fileSize))*100) + "% Done")
+
+        print("Done receiving")
+        file_name = None
+        fileSize = None
+    if message == "removed":
+        print("Receiving...")
+        name = client.recv(1024)
+        file_name = os.path.join(path_to_copy, name.decode())
+        os.remove(file_name)
+        print(name.decode() + " has been removed")
+
+
+
 # import socket
 # import threading
 # import os
@@ -44,48 +91,60 @@
 # if __name__ == "__main__":
 #     Main()
 
-import socket
-import hashlib
-import threading
-import struct
-
-HOST = '127.0.0.1'
-PORT = 2345
-
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind((HOST, PORT))
-s.listen(10)
-print("Waiting for a connection.....")
-
-conn, addr = s.accept()
-print("Got a connection from ", addr)
-
-while True:
-
-    hash_type = conn.recv(1024)
-    print('hash type: ', hash_type)
-    if not hash_type:
-        break
-
-    file_name = conn.recv(1024)
-    print('file name: ', file_name)
-
-    file_size = conn.recv(1024)
-    file_size = int(file_size, 2)
-    print('file size: ', file_size )
-
-    f = open(file_name, 'wb')
-    chunk_size = 4096
-    while file_size > 0:
-        if file_size < chunk_size:
-            chuk_size = file_size
-        data = conn.recv(chunk_size)
-    f.write(data)
-
-    file_size -= len(data)
-    f.close()
-    print('File received successfully')
-    s.close()
+# import socket
+# import os
+#
+# import buffer
+#
+# HOST = ''
+# PORT = 2346
+#
+# # If server and client run in same local directory,
+# # need a separate place to store the uploads.
+# try:
+#     os.mkdir('uploads')
+# except FileExistsError:
+#     pass
+#
+# s = socket.socket()
+# s.bind((HOST, PORT))
+# s.listen(10)
+# print("Waiting for a connection.....")
+#
+# while True:
+#     conn, addr = s.accept()
+#     print("Got a connection from ", addr)
+#     connbuf = buffer.Buffer(conn)
+#
+#     while True:
+#         hash_type = connbuf.get_utf8()
+#         if not hash_type:
+#             break
+#         print('hash type: ', hash_type)
+#
+#         file_name = connbuf.get_utf8()
+#         if not file_name:
+#             break
+#         file_name = os.path.join('ServerFolder',file_name)
+#         print('file name: ', file_name)
+#
+#         file_size = int(connbuf.get_utf8())
+#         print('file size: ', file_size )
+#
+#         with open(file_name, 'wb') as f:
+#             remaining = file_size
+#             while remaining:
+#                 chunk_size = 4096 if remaining >= 4096 else remaining
+#                 chunk = connbuf.get_bytes(chunk_size)
+#                 if not chunk: break
+#                 f.write(chunk)
+#                 remaining -= len(chunk)
+#             if remaining:
+#                 print('File incomplete.  Missing',remaining,'bytes.')
+#             else:
+#                 print('File received successfully.')
+#     print('Connection closed.')
+#     conn.close()
 
 # import socket, shutil
 #

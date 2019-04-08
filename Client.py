@@ -32,35 +32,7 @@
 #             print("File doesn't exist")
 #
 #     s.close()
-#
-# if __name__ == "__main__":
-#     Main()
-# import socket
-# import inotify.adapters
-# import sys
-#
-# host = '127.0.0.1'
-# port = 5552
-#
-# client = socket.socket()
-# client.connect((host, port))
-#
-# i = inotify.adapters.Inotify()
-# i.add_watch(sys.argv[1])
-#
-# message = ' '
-#
-# for event in i.event_gen(yield_nones=False):
-#     (_, type_names, path, filename) = event
-#
-#     if(type_names[0] == 'IN_MOVED_TO'):
-#         message = filename
-#         print("File " + filename + " has been moved inside " + path)
-#         client.send(message.encode())
-#     elif(type_names[0] == 'IN_MOVED_FROM'):
-#         message = filename
-#         print("File " + filename + " has been moved from " + path)
-#         client.send(message.encode())
+
 
 # import os, time, sys, socket, shutil
 #
@@ -97,54 +69,126 @@
 #       client.send(path_to_watch.encode())
 #   before = after
 
-import socket
-import threading
+import socket               # Import socket module
+import sys
 import os
 import time
-import uuid
 
-import buffer
-
-HOST = '127.0.0.1'
-PORT = 2345
-
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect((HOST, PORT))
+s = socket.socket()         # Create a socket object
+host = socket.gethostname() # Get local machine name
+port = 12345                 # Reserve a port for your service.
 
 path_to_watch = "/home/sebastian/Documents/Scoala/Pexip/ClientFolder"
+s.connect((host, port))
+before = dict ([(f, None) for f in os.listdir (path_to_watch)])
 
 while 1:
-    with s:
-
-        hash_type = input("Enter hash type: ")
-
-        before = dict([(f, None) for f in os.listdir(path_to_watch)])
-        time.sleep(10)
-        after = dict([(f, None) for f in os.listdir(path_to_watch)])
-        added = [f for f in after if not f in before]
-        removed = [f for f in before if not f in after]
-        if added:
-            for i, file in enumerate(added):
-                time.sleep(1)
-                print(file)
-                path_to_file = os.path.join(path_to_watch, file)
-
-                s.send(path_to_file.encode())
-
-                file_size = os.path.getsize(path_to_file)
-                file_size = bin(file_size)
-                print(file_size)
-                s.send(file_size.encode())
-
-                f = open(path_to_file, 'rb')
-                l = f.read()
-                while(l):
+    time.sleep(5)
+    after = dict ([(f, None) for f in os.listdir (path_to_watch)])
+    added = [f for f in after if not f in before]
+    removed = [f for f in before if not f in after]
+    if added:
+        message = "added"
+        s.send(message.encode())
+        for i, file in enumerate(added):
+            print("file " + file)
+            s.send(file.encode())
+            path_to_file = os.path.join(path_to_watch, file)
+            print("File path " + path_to_file)
+            f = open(path_to_file, 'rb')
+            filesize = str(os.path.getsize(path_to_file))
+            s.send(filesize.encode('utf-8'))
+            fileSize = int(filesize)
+            with open(path_to_file, 'rb') as f:
+                l = f.read(1024)
+                totalReceived = len(l)
+                s.send(l)
+                while totalReceived < fileSize:
+                    l = f.read(1024)
+                    totalReceived += len(l)
                     s.send(l)
-                    l = f.read()
-                f.close()
-                print("File Sent")
+            print("Done reading")
+    if removed:
+        message = "removed"
+        s.send(message.encode())
+        for i, file in enumerate(removed):
+            print("Removed file " + file)
+            s.send(file.encode())
+    before = after
 
+# f = open('text.txt','rb')
+# print('Sending...')
+# l = f.read(1024)
+# while (l):
+#     print('Sending...')
+#     s.send(l)
+#     l = f.read(1024)
+# f.close()
+# print("Done Sending")
+# s.close                     # Close the socket when done
 
+  # if added:
+  #     for i, file in enumerate(added):
+  #         print("file" + file)
+  #         path_to_file = os.path.join(path_to_watch, file)
+  #         print("path_to_file" + path_to_file)
+  #         f = open(path_to_file, 'rb')
+  #         l = f.read(1024)
+  #         print("Added: " + ", ".join(added))
+  #         message = "Added: " + ", ".join(added)
+  #         client.send(l)
+  #         f.close()
+  #         # client.send(path_to_watch.encode())
+  # if removed:
+  #     print(removed)
+  #     print("Removed: " + ", ".join(removed))
+  #     message = "Removed: " + ", ".join(removed)
+  #     client.send(path_to_watch.encode())
+  # before = after
+
+#
+# import socket
+# import threading
+# import os
+# import time
+#
+# import buffer
+#
+# host = '127.0.0.1'
+# port = 2346
+#
+# s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# s.connect((host, port))
+#
+# path_to_watch = "/home/sebastian/Documents/Scoala/Pexip/ClientFolder"
+# before = dict([(f, None) for f in os.listdir(path_to_watch)])
+#
+# while 1:
+#     with s:
+#         sbuf = buffer.Buffer(s)
+#
+#         hash_type = 'abc'
+#
+#         time.sleep(10)
+#         after = dict([(f, None) for f in os.listdir(path_to_watch)])
+#         added = [f for f in after if not f in before]
+#         removed = [f for f in before if not f in after]
+#         if added:
+#             for i, file in enumerate(added):
+#                 time.sleep(1)
+#                 print(file)
+#                 path_to_file = os.path.join(path_to_watch, file)
+#                 sbuf.put_utf8(hash_type)
+#                 sbuf.put_utf8(path_to_file)
+#                 print(path_to_file)
+#
+#                 file_size = os.path.getsize(path_to_file)
+#                 print(file_size)
+#                 sbuf.put_utf8(str(file_size))
+#
+#                 with open(path_to_file, 'rb') as f:
+#                     sbuf.put_bytes(f.read())
+#                 print("File sent")
 # with s:
 #     sbuf = buffer.Buffer(s)
 #
