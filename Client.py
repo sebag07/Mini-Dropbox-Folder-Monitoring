@@ -6,7 +6,7 @@ import time
 # Create a socket object, and connects the client to the host and port of the server.
 s = socket.socket()
 host = socket.gethostname()
-port = 5005
+port = 5007
 s.connect((host, port))
 
 # Path of the folder that is monitorized
@@ -28,14 +28,14 @@ while True:
             s.send(message.encode())
             print("Added file " + file)
             # Message sent to let the server know the name of the file that was added
-            s.send(file.encode())
+            s.send(file.encode(encoding='UTF-8',errors='strict'))
             # Full path of the added file
             path_to_file = os.path.join(path_to_watch, file)
             f = open(path_to_file, 'rb')
             # Filesize sent to the server so it knows whether to continue sending messages
             # to fully upload the file. Encoded in utf-8 as files of bigger size had ASCII characters present.
             filesize = str(os.path.getsize(path_to_file))
-            s.send(filesize.encode('utf-8'))
+            s.send(filesize.encode(encoding='UTF-8',errors='strict'))
             filesize = int(filesize)
             with open(path_to_file, 'rb') as f:
                 # Starts sending the file over to the server by continously sending data until
@@ -49,7 +49,8 @@ while True:
                     s.send(data)
             print("Done reading")
             filesize = None
-            time.sleep(0.5)
+            path_to_file = None
+            time.sleep(1)
     if removed:
         # Message sent to the server so it knows a file has been removed.
         # Loops through the removed files and sends a message to the server with the removed file.
